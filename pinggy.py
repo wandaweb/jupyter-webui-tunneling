@@ -5,6 +5,7 @@ import socket
 import subprocess
 import sys
 import time
+import psutil
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -38,6 +39,17 @@ def print_url():
             for line in file:
                 print(line)
     
+def find_and_terminate_process(port):
+    for process in psutil.process_iter(['pid', 'name', 'connections']):
+        for conn in process.info.get('connections', []):
+            if conn.laddr.port == port:
+                print(f"Port {port} is in use by process {process.info['name']} (PID {process.info['pid']})")
+                try:
+                    process.terminate()
+                    print(f"Terminated process with PID {process.info['pid']}")
+                except psutil.NoSuchProcess:
+                    print(f"Process with PID {process.info['pid']} not found")
+
 def main():
     parser = argparse.ArgumentParser(description='Start pinggy with shell command and port')
     parser.add_argument('--command', help='Specify the command to run with pinggy')
@@ -64,7 +76,3 @@ def main():
     
 if __name__ == '__main__':
     main()
-    
-    
-    
-    
